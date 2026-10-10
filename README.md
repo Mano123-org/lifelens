@@ -54,5 +54,24 @@ automatically, connect to banks, or expose an AI provider until those separately
 integrations are configured. Authentication and per-user isolation are still required before
 handling multiple users or sensitive production data.
 
+### Architecture
+```mermaid
+flowchart TD
+  A["User Input"] --> B["Web Dashboard"]
+  C["Computer Usage Agent"] --> D["Backend API"]
+  E["Mobile App"] --> D
+  F["Browser Extension"] --> D
+  B --> D
+  G["CSV Import"] --> D
+  D --> H["Validation and Authentication"]
+  H --> I[("Database")]
+  I --> J["Dashboard and Charts"]
+  I --> K["AI Assistant"]
+```
+
+The currently deployed slice implements the Web Dashboard, Backend API, validation, and D1
+database path. The computer agent, mobile app, browser extension, CSV import, authentication,
+and AI Assistant remain planned integration points.
+
 ## Planned layout
 apps/web, apps/mobile (Flutter), apps/desktop-agent, services/api, services/analytics, packages/shared-types, database, docs.
