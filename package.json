@@ -1,6 +1,9 @@
 {
   "name": "lifelens",
   "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
   "scripts": {
     "build": "npm --prefix apps/web run build",
     "deploy": "npm run build && npx wrangler deploy"
