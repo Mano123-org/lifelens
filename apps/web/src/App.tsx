@@ -7,7 +7,8 @@ import Workspace from './pages/Workspace'
 
 export default function App() {
   const [page, setPage] = useState('Dashboard')
-  const [theme, setTheme] = useState(() => localStorage.getItem('ll-theme') ?? 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem('ll-theme') ?? 'light')
+  const [userName, setUserName] = useState(() => localStorage.getItem('ll-user-name') ?? '')
   const [data, setData] = useState<LifeData | null>(null)
   const [summary, setSummary] = useState<ApiSummary | null>(null)
   const [error, setError] = useState('')
@@ -35,7 +36,7 @@ export default function App() {
       <Sidebar page={page} onSelect={setPage} />
       <main>
         <header>
-          <div><h1>{page}</h1><p className="muted">LifeLens — Your Life. In Sight.</p></div>
+          <div><h1>{page}</h1><p className="muted">{userName ? `Welcome, ${userName}` : 'LifeLens — Your Life. In Sight.'}</p></div>
           <div className="actions">
             {data && <button className="btn ghost" onClick={() => setData(null)}>Clear data</button>}
             <button className="btn ghost" aria-label="Toggle theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
@@ -44,7 +45,7 @@ export default function App() {
           </div>
         </header>
         {error && <div className="banner error">{error}</div>}
-        {page === 'Dashboard' ? <Dashboard data={data} onLoadDemo={() => setData(demoData())} /> : summary ? <Workspace name={page} summary={summary} onRefresh={refresh} /> : <div className="card empty"><p className="muted">Loading your records...</p></div>}
+        {page === 'Dashboard' ? <Dashboard data={data} summary={summary} userName={userName} onUserNameChange={name => { setUserName(name); localStorage.setItem('ll-user-name', name) }} onRefresh={refresh} onLoadDemo={() => setData(demoData())} /> : summary ? <Workspace name={page} summary={summary} onRefresh={refresh} /> : <div className="card empty"><p className="muted">Loading your records...</p></div>}
       </main>
     </div>
   )

@@ -18,12 +18,13 @@ export interface ApiSummary {
 
 export const getSummary = async (): Promise<ApiSummary> => {
   const response = await fetch('/api/summary')
-  if (!response.ok) throw new Error('The LifeLens API is unavailable. Configure the D1 database and deploy the Worker.')
+  if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('The LifeLens API is unavailable. Configure D1 and run the Worker for saved data.')
   return response.json() as Promise<ApiSummary>
 }
 
 export const apiRequest = async (path: string, method: string, body: Record<string, unknown>) => {
   const response = await fetch(path, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('The LifeLens API is unavailable. Configure D1 and run the Worker for saved data.')
   const result = await response.json() as { error?: string }
   if (!response.ok) throw new Error(result.error ?? 'Request failed')
   return result
