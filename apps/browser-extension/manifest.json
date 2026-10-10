@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "LifeLens Browser Monitor",
+  "version": "0.1.0",
+  "description": "Record authorized website screen time for LifeLens.",
+  "permissions": ["storage", "tabs", "alarms"],
+  "host_permissions": ["https://lifelen.ethicxedge.workers.dev/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "LifeLens Browser Monitor" }
+}
