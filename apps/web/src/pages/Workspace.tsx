@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { apiRequest, type ApiSummary } from '../data'
 
 type Props = { name: string; summary: ApiSummary; onRefresh: () => Promise<void> }
@@ -56,6 +56,28 @@ export default function Workspace({ name, summary, onRefresh }: Props) {
     {error && <p className="error">{error}</p>}
   </section>
 
+  if (name === 'Analytics') {
+    const totalMinutes = summary.usage.reduce((total, item) => total + item.minutes, 0)
+    const expenses = summary.transactions.filter(item => item.kind === 'expense').reduce((total, item) => total + item.amount, 0)
+    const income = summary.transactions.filter(item => item.kind === 'income').reduce((total, item) => total + item.amount, 0)
+    const completed = summary.tasks.filter(item => item.completed === 1).length
+    return <section className="workspace card"><h2>Analytics</h2><p className="muted">Calculated from your stored records.</p><div className="metric-grid"><div><strong>{totalMinutes}</strong><span>screen-time minutes</span></div><div><strong>₹{expenses.toLocaleString('en-IN')}</strong><span>expenses</span></div><div><strong>₹{(income - expenses).toLocaleString('en-IN')}</strong><span>net savings</span></div><div><strong>{completed}/{summary.tasks.length}</strong><span>tasks complete</span></div></div></section>
+  }
+
+  if (name === 'Reports') {
+    const download = () => {
+      const rows = [['type', 'label', 'value'], ...summary.usage.map(item => ['screen-time', item.app, String(item.minutes)]), ...summary.transactions.map(item => [item.kind, item.category, String(item.amount)])]
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(new Blob([rows.map(row => row.join(',')).join('\n')], { type: 'text/csv' }))
+      link.download = 'lifelens-report.csv'; link.click(); URL.revokeObjectURL(link.href)
+    }
+    return <section className="workspace card"><h2>Reports</h2><p className="muted">Export the currently loaded records as CSV.</p><button className="btn" onClick={download}>Download CSV report</button><div className="list"><p>{summary.usage.length} usage groups</p><p>{summary.transactions.length} transactions</p><p>{summary.tasks.length} tasks</p></div></section>
+  }
+
+  if (name === 'AI Assistant') return <Assistant summary={summary} />
+
+  if (name === 'Settings') return <section className="workspace card"><h2>Settings</h2><p className="muted">Privacy controls for this browser session.</p><label className="setting"><input type="checkbox" defaultChecked /> Allow authorized browser monitoring</label><label className="setting"><input type="checkbox" /> Allow device collector integration</label><p className="muted">Device collectors are never enabled without explicit permission.</p></section>
+
   if (name === 'Finances') return <section className="workspace card">
     <h2>Finances</h2><p className="muted">Manual records only. No bank connection is enabled.</p>
     <form className="form-grid" onSubmit={event => { event.preventDefault(); void save(() => apiRequest('/api/transactions', 'POST', { kind, category, amount, occurredOn: new Date().toISOString().slice(0, 10) })) }}>
@@ -69,4 +91,18 @@ export default function Workspace({ name, summary, onRefresh }: Props) {
   </section>
 
   return <div className="card empty"><h2>{name}</h2><p className="muted">This section is not connected yet, so it does not show invented records.</p></div>
+}
+
+function Assistant({ summary }: { summary: ApiSummary }) {
+  const [question, setQuestion] = useState('')
+  const [answer, setAnswer] = useState('Ask about your stored LifeLens records.')
+  const ask = (event: FormEvent) => {
+    event.preventDefault()
+    const text = question.toLowerCase()
+    if (text.includes('screen') || text.includes('app')) setAnswer(`You recorded ${summary.usage.reduce((total, item) => total + item.minutes, 0)} minutes across ${summary.usage.length} app records.`)
+    else if (text.includes('expense') || text.includes('spend')) setAnswer(`Your recorded expenses total ₹${summary.transactions.filter(item => item.kind === 'expense').reduce((total, item) => total + item.amount, 0).toLocaleString('en-IN')}.`)
+    else if (text.includes('task')) setAnswer(`${summary.tasks.filter(item => item.completed === 1).length} of ${summary.tasks.length} recorded tasks are complete.`)
+    else setAnswer('I can answer questions about recorded screen time, expenses, and tasks. No unrecorded activity is assumed.')
+  }
+  return <section className="workspace card"><h2>AI Assistant</h2><p className="muted">This working model answers from stored records only. No external AI service is configured.</p><form className="form-row" onSubmit={ask}><input aria-label="Assistant question" value={question} onChange={event => setQuestion(event.target.value)} placeholder="How much screen time did I record?" required /><button className="btn">Ask</button></form><div className="answer">{answer}</div></section>
 }
