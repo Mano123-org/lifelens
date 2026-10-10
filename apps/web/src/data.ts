@@ -16,18 +16,43 @@ export interface ApiSummary {
   transactions: { kind: 'income' | 'expense'; category: string; amount: number; occurredOn: string; note: string | null }[]
 }
 
+const LOCAL_KEY = 'll-local-records'
+const emptyLocalSummary = (): ApiSummary => ({ isDemo: false, tasks: [], usage: [], transactions: [] })
+const readLocalSummary = (): ApiSummary => {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) ?? '') as ApiSummary }
+  catch { return emptyLocalSummary() }
+}
+const writeLocalSummary = (summary: ApiSummary) => localStorage.setItem(LOCAL_KEY, JSON.stringify(summary))
+const localMode = () => window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
 export const getSummary = async (): Promise<ApiSummary> => {
-  const response = await fetch('/api/summary')
-  if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('The LifeLens API is unavailable. Configure D1 and run the Worker for saved data.')
-  return response.json() as Promise<ApiSummary>
+  try {
+    const response = await fetch('/api/summary')
+    if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error()
+    return response.json() as Promise<ApiSummary>
+  } catch {
+    if (localMode()) return readLocalSummary()
+    throw new Error('The LifeLens API is unavailable. Configure D1 and run the Worker for saved data.')
+  }
 }
 
 export const apiRequest = async (path: string, method: string, body: Record<string, unknown>) => {
-  const response = await fetch(path, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
-  if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('The LifeLens API is unavailable. Configure D1 and run the Worker for saved data.')
-  const result = await response.json() as { error?: string }
-  if (!response.ok) throw new Error(result.error ?? 'Request failed')
-  return result
+  try {
+    const response = await fetch(path, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    if (!response.headers.get('content-type')?.includes('application/json')) throw new Error()
+    const result = await response.json() as { error?: string }
+    if (!response.ok) throw new Error(result.error ?? 'Request failed')
+    return result
+  } catch (error) {
+    if (!localMode()) throw error instanceof Error && error.message ? error : new Error('The LifeLens API is unavailable. Configure D1 and run the Worker for saved data.')
+    const summary = readLocalSummary()
+    if (path === '/api/tasks' && method === 'POST') summary.tasks.push({ id: Date.now(), title: String(body.title), dueAt: null, completed: 0 })
+    else if (path === '/api/usage' && method === 'POST') summary.usage.push({ app: String(body.appName), category: String(body.category ?? 'Uncategorized'), minutes: Number(body.minutes) })
+    else if (path === '/api/transactions' && method === 'POST') summary.transactions.push({ kind: body.kind as 'income' | 'expense', category: String(body.category), amount: Number(body.amount), occurredOn: String(body.occurredOn), note: null })
+    else throw new Error('This local action is not supported without the Worker API.')
+    writeLocalSummary(summary)
+    return { ok: true }
+  }
 }
 
 export const summaryToLifeData = (summary: ApiSummary): LifeData => {
