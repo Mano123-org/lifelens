@@ -2,18 +2,33 @@ import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
-import Placeholder from './pages/Placeholder'
-import { demoData, type LifeData } from './data'
+import { demoData, getSummary, summaryToLifeData, type ApiSummary, type LifeData } from './data'
+import Workspace from './pages/Workspace'
 
 export default function App() {
   const [page, setPage] = useState('Dashboard')
   const [theme, setTheme] = useState(() => localStorage.getItem('ll-theme') ?? 'dark')
   const [data, setData] = useState<LifeData | null>(null)
+  const [summary, setSummary] = useState<ApiSummary | null>(null)
+  const [error, setError] = useState('')
+
+  const refresh = async () => {
+    try {
+      const next = await getSummary()
+      setSummary(next)
+      setData(next.usage.length || next.tasks.length || next.transactions.length ? summaryToLifeData(next) : null)
+      setError('')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not load LifeLens data')
+    }
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('ll-theme', theme)
   }, [theme])
+
+  useEffect(() => { void refresh() }, [])
 
   return (
     <div className="layout">
@@ -28,7 +43,8 @@ export default function App() {
             </button>
           </div>
         </header>
-        {page === 'Dashboard' ? <Dashboard data={data} onLoadDemo={() => setData(demoData())} /> : <Placeholder name={page} />}
+        {error && <div className="banner error">{error}</div>}
+        {page === 'Dashboard' ? <Dashboard data={data} onLoadDemo={() => setData(demoData())} /> : summary ? <Workspace name={page} summary={summary} onRefresh={refresh} /> : <div className="card empty"><p className="muted">Loading your records...</p></div>}
       </main>
     </div>
   )
