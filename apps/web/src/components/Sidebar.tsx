@@ -1,8 +1,9 @@
-import { LayoutDashboard, Smartphone, ListChecks, Wallet, BarChart3, Bot, FileText, Settings, Aperture } from 'lucide-react'
+import { LayoutDashboard, Smartphone, Activity, ListChecks, Wallet, BarChart3, Bot, FileText, Settings, Aperture } from 'lucide-react'
 
 export const NAV = [
   { name: 'Dashboard', icon: LayoutDashboard },
   { name: 'App Usage', icon: Smartphone },
+  { name: 'Network Monitor', icon: Activity },
   { name: 'Routines & Tasks', icon: ListChecks },
   { name: 'Finances', icon: Wallet },
   { name: 'Analytics', icon: BarChart3 },

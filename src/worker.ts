@@ -24,6 +24,12 @@ const positiveInt = (value: unknown, field: string) => {
   return number
 }
 
+const nonNegativeInt = (value: unknown, field: string) => {
+  const number = Number(value)
+  if (!Number.isInteger(number) || number < 0) throw new Error(`${field} must be a non-negative integer`)
+  return number
+}
+
 async function api(request: Request, env: Env): Promise<Response> {
   if (!env.DB) return json({ error: 'Database is not configured. Create a D1 binding named DB.' }, 503)
   const url = new URL(request.url)
@@ -78,6 +84,31 @@ async function api(request: Request, env: Env): Promise<Response> {
       const occurredOn = requiredText(body?.occurredOn, 'occurredOn')
       const note = typeof body?.note === 'string' ? body.note.trim() : null
       const result = await env.DB.prepare('INSERT INTO transactions (kind, category, amount, occurred_on, note) VALUES (?, ?, ?, ?, ?) RETURNING id, kind, category, amount, occurred_on as occurredOn, note').bind(kind, category, amount, occurredOn, note).first()
+      return json(result, 201)
+    }
+
+    if (url.pathname === '/api/network/summary' && method === 'GET') {
+      const result = await env.DB.prepare(`SELECT source, COUNT(*) as events, SUM(bytes_sent) as bytesSent,
+        SUM(bytes_received) as bytesReceived, MAX(occurred_at) as lastSeen
+        FROM network_events GROUP BY source ORDER BY lastSeen DESC`).all()
+      return json({ sources: result.results })
+    }
+
+    if (url.pathname === '/api/network/events' && method === 'POST') {
+      const body = await parseBody(request)
+      const source = body?.source === 'computer-agent' || body?.source === 'mobile-app' || body?.source === 'browser-extension' ? body.source : null
+      if (!source) throw new Error('source must be computer-agent, mobile-app, or browser-extension')
+      const deviceId = requiredText(body?.deviceId, 'deviceId')
+      const eventType = requiredText(body?.eventType, 'eventType')
+      const hostname = typeof body?.hostname === 'string' ? body.hostname.trim() : null
+      const bytesSent = body?.bytesSent === undefined ? 0 : nonNegativeInt(body.bytesSent, 'bytesSent')
+      const bytesReceived = body?.bytesReceived === undefined ? 0 : nonNegativeInt(body.bytesReceived, 'bytesReceived')
+      const occurredAt = typeof body?.occurredAt === 'string' && body.occurredAt ? body.occurredAt : new Date().toISOString()
+      const result = await env.DB.prepare(`INSERT INTO network_events
+        (source, device_id, event_type, hostname, bytes_sent, bytes_received, occurred_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id, source, device_id as deviceId, event_type as eventType,
+        hostname, bytes_sent as bytesSent, bytes_received as bytesReceived, occurred_at as occurredAt`)
+        .bind(source, deviceId, eventType, hostname, bytesSent, bytesReceived, occurredAt).first()
       return json(result, 201)
     }
     return json({ error: 'Not found' }, 404)

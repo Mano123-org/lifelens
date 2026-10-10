@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { apiRequest, type ApiSummary } from '../data'
 
 type Props = { name: string; summary: ApiSummary; onRefresh: () => Promise<void> }
@@ -13,6 +13,12 @@ export default function Workspace({ name, summary, onRefresh }: Props) {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [network, setNetwork] = useState<{ source: string; events: number; bytesSent: number; bytesReceived: number }[]>([])
+
+  useEffect(() => {
+    if (name !== 'Network Monitor') return
+    void fetch('/api/network/summary').then(response => response.json()).then(result => setNetwork(result.sources ?? [])).catch(() => setError('Network telemetry is unavailable until the Worker database is configured.'))
+  }, [name])
 
   const save = async (action: () => Promise<unknown>) => {
     setBusy(true); setNotice(''); setError('')
@@ -41,6 +47,13 @@ export default function Workspace({ name, summary, onRefresh }: Props) {
     </form>
     <div className="list">{summary.usage.length ? summary.usage.map(item => <div className="row" key={`${item.app}-${item.category}`}><span>{item.app} <small className="muted">{item.category}</small></span><span>{item.minutes} min</span></div>) : <p className="muted">No usage records yet.</p>}</div>
     {notice && <p className="success">{notice}</p>}{error && <p className="error">{error}</p>}
+  </section>
+
+  if (name === 'Network Monitor') return <section className="workspace card">
+    <h2>Network Monitor</h2>
+    <p className="muted">Authorized telemetry from connected sources only. This site cannot inspect devices without an installed collector and permission.</p>
+    <div className="list">{network.length ? network.map(item => <div className="row" key={item.source}><span>{item.source}</span><span>{item.events} events · {item.bytesSent + item.bytesReceived} bytes</span></div>) : <p className="muted">No network events recorded yet.</p>}</div>
+    {error && <p className="error">{error}</p>}
   </section>
 
   if (name === 'Finances') return <section className="workspace card">
