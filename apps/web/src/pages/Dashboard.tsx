@@ -12,8 +12,11 @@ export default function Dashboard({ data, summary, userName, onUserNameChange, o
   const [task, setTask] = useState('')
   const [appName, setAppName] = useState('')
   const [minutes, setMinutes] = useState('30')
+  const [usageCategory, setUsageCategory] = useState('Productivity')
   const [category, setCategory] = useState('Food')
   const [amount, setAmount] = useState('')
+  const [incomeCategory, setIncomeCategory] = useState('Salary')
+  const [incomeAmount, setIncomeAmount] = useState('')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
 
@@ -27,8 +30,9 @@ export default function Dashboard({ data, summary, userName, onUserNameChange, o
     <div className="input-heading"><div><h2>Quick input</h2><p className="muted">Add your daily records directly from the dashboard.</p></div><input aria-label="Your name" value={userName} onChange={event => onUserNameChange(event.target.value)} placeholder="Your name" /></div>
     <div className="input-grid">
       <form onSubmit={event => { event.preventDefault(); void save(() => apiRequest('/api/tasks', 'POST', { title: task })) }}><h3>New task</h3><input aria-label="Task title" value={task} onChange={event => setTask(event.target.value)} placeholder="Task title" required /><button className="btn">Add task</button></form>
-      <form onSubmit={event => { event.preventDefault(); void save(() => apiRequest('/api/usage', 'POST', { appName, minutes, category: 'Productivity' })) }}><h3>Screen time</h3><input aria-label="App name" value={appName} onChange={event => setAppName(event.target.value)} placeholder="App name" required /><input aria-label="Screen time minutes" type="number" min="1" value={minutes} onChange={event => setMinutes(event.target.value)} required /><button className="btn">Record minutes</button></form>
+      <form onSubmit={event => { event.preventDefault(); void save(() => apiRequest('/api/usage', 'POST', { appName, minutes, category: usageCategory })) }}><h3>Screen time</h3><input aria-label="App name" value={appName} onChange={event => setAppName(event.target.value)} placeholder="App name" required /><input aria-label="Screen time minutes" type="number" min="1" value={minutes} onChange={event => setMinutes(event.target.value)} required /><input aria-label="Usage category" value={usageCategory} onChange={event => setUsageCategory(event.target.value)} placeholder="Category" required /><button className="btn">Record minutes</button></form>
       <form onSubmit={event => { event.preventDefault(); void save(() => apiRequest('/api/transactions', 'POST', { kind: 'expense', category, amount, occurredOn: new Date().toISOString().slice(0, 10) })) }}><h3>Expense</h3><input aria-label="Expense category" value={category} onChange={event => setCategory(event.target.value)} placeholder="Category" required /><input aria-label="Expense amount" type="number" min="1" value={amount} onChange={event => setAmount(event.target.value)} placeholder="Amount" required /><button className="btn">Add expense</button></form>
+      <form onSubmit={event => { event.preventDefault(); void save(() => apiRequest('/api/transactions', 'POST', { kind: 'income', category: incomeCategory, amount: incomeAmount, occurredOn: new Date().toISOString().slice(0, 10) })) }}><h3>Income</h3><input aria-label="Income category" value={incomeCategory} onChange={event => setIncomeCategory(event.target.value)} placeholder="Category" required /><input aria-label="Income amount" type="number" min="1" value={incomeAmount} onChange={event => setIncomeAmount(event.target.value)} placeholder="Amount" required /><button className="btn">Add income</button></form>
     </div>
     {notice && <p className="success">{notice}</p>}{error && <p className="error">{error}</p>}
   </section>

@@ -33,7 +33,7 @@ header { display:flex; justify-content:space-between; align-items:flex-start; ma
 .dashboard-inputs { margin-bottom:1rem; }
 .input-heading { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
 .input-heading input { max-width:220px; }
-.input-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; margin-top:1rem; }
+.input-grid { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1rem; margin-top:1rem; }
 .input-grid form { display:flex; flex-direction:column; gap:.6rem; padding:1rem; border:1px solid var(--line); border-radius:10px; }
 .input-grid h3 { margin:0; }
 .workspace { max-width: 900px; }
